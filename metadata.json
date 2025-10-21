@@ -1,0 +1,5 @@
+{
+  "name": "Video Stream Player",
+  "description": "A simple web application to stream videos from a direct URL. Just paste the video link, click 'Stream', and watch your video instantly.",
+  "requestFramePermissions": []
+}

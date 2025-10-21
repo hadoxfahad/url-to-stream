@@ -12,6 +12,7 @@ const PlayIcon: React.FC = () => (
 const App: React.FC = () => {
   const [inputUrl, setInputUrl] = useState<string>('');
   const [streamUrl, setStreamUrl] = useState<string>('');
+  const [playerKey, setPlayerKey] = useState<number>(Date.now());
 
   useEffect(() => {
     // On initial load, try to get the last streamed URL from localStorage
@@ -28,6 +29,8 @@ const App: React.FC = () => {
       setStreamUrl(inputUrl);
       // Save the new URL to localStorage
       localStorage.setItem('lastStreamUrl', inputUrl);
+      // Change the key to force re-mount of the VideoPlayer, ensuring it reloads progress
+      setPlayerKey(Date.now());
     }
   }, [inputUrl]);
 
@@ -64,7 +67,7 @@ const App: React.FC = () => {
             </form>
         </main>
         
-        <VideoPlayer src={streamUrl} />
+        <VideoPlayer key={playerKey} src={streamUrl} />
         
       </div>
        <footer className="absolute bottom-4 text-gray-500 text-sm">

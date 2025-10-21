@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import VideoPlayer from './components/VideoPlayer';
 
 // A simple SVG icon for the play button, defined outside the main component to prevent re-creation on re-renders.
@@ -13,10 +13,21 @@ const App: React.FC = () => {
   const [inputUrl, setInputUrl] = useState<string>('');
   const [streamUrl, setStreamUrl] = useState<string>('');
 
+  useEffect(() => {
+    // On initial load, try to get the last streamed URL from localStorage
+    const savedUrl = localStorage.getItem('lastStreamUrl');
+    if (savedUrl) {
+      setInputUrl(savedUrl);
+      setStreamUrl(savedUrl);
+    }
+  }, []);
+
   const handleStream = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (inputUrl.trim()) {
       setStreamUrl(inputUrl);
+      // Save the new URL to localStorage
+      localStorage.setItem('lastStreamUrl', inputUrl);
     }
   }, [inputUrl]);
 

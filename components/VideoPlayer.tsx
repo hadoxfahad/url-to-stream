@@ -64,6 +64,32 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src }) => {
   const [isInPiP, setIsInPiP] = useState(false);
   const [isPiPSupported, setIsPiPSupported] = useState(false);
   const controlsTimeout = useRef<number | null>(null);
+  const lastSaveTime = useRef(0);
+
+  const saveProgress = useCallback((time: number) => {
+    if (!src) return;
+    try {
+        const progresses = JSON.parse(localStorage.getItem('videoProgress') || '{}');
+        progresses[src] = time;
+        localStorage.setItem('videoProgress', JSON.stringify(progresses));
+    } catch (e) {
+        console.error("Failed to save progress", e);
+    }
+  }, [src]);
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+        if (videoRef.current && src) {
+            saveProgress(videoRef.current.currentTime);
+        }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+        // Save one last time on component unmount (e.g., when src changes)
+        handleBeforeUnload();
+    };
+  }, [src, saveProgress]);
 
   useEffect(() => {
     if ('pictureInPictureEnabled' in document) {
@@ -109,6 +135,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src }) => {
     setIsLoading(true);
     const video = videoRef.current;
     if (!video) return;
+
+    // Reset progress for new video source
+    setProgress(0);
 
     let hls: any;
 
@@ -179,14 +208,31 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src }) => {
   const handleTimeUpdate = () => {
     const video = videoRef.current;
     if (video) {
-      setProgress(video.currentTime);
+        setProgress(video.currentTime);
+        // Throttle saving to localStorage to every 5 seconds
+        const now = Date.now();
+        if (now - lastSaveTime.current > 5000) {
+            saveProgress(video.currentTime);
+            lastSaveTime.current = now;
+        }
     }
   };
   
   const handleLoadedMetadata = () => {
       const video = videoRef.current;
       if (video) {
-          setDuration(video.duration);
+        setDuration(video.duration);
+        // Restore progress from localStorage
+        try {
+            const progresses = JSON.parse(localStorage.getItem('videoProgress') || '{}');
+            const savedTime = progresses[src];
+            if (savedTime && savedTime > 0 && savedTime < video.duration) {
+                video.currentTime = savedTime;
+                setProgress(savedTime);
+            }
+        } catch (e) {
+            console.error("Failed to load progress", e);
+        }
       }
   }
 
